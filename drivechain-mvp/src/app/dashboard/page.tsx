@@ -1,11 +1,77 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'renewals', 'profile'
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [licenseData, setLicenseData] = useState({
+    name: "Thabo Molefe",
+    id: "9303245801083",
+    license: "SA 4567890",
+    code: "B (Light motor vehicle)",
+    issueDate: "15/03/2021",
+    expiryDate: "15/03/2026",
+    discExpiry: "31/12/2024",
+  });
+  const [renewalHistory, setRenewalHistory] = useState<any[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedAddress = localStorage.getItem('walletAddress');
+      if (storedAddress) {
+        setWalletAddress(storedAddress);
+      }
+
+      // Load or initialize demo data in localStorage
+      const storedLicenseData = localStorage.getItem('licenseData');
+      if (storedLicenseData) {
+        setLicenseData(JSON.parse(storedLicenseData));
+      } else {
+        localStorage.setItem('licenseData', JSON.stringify(licenseData));
+      }
+
+      const storedRenewalHistory = localStorage.getItem('renewalHistory');
+      if (storedRenewalHistory) {
+        setRenewalHistory(JSON.parse(storedRenewalHistory));
+      } else {
+        const demoRenewalHistory = [
+          {
+            id: 1,
+            type: "License Renewal",
+            date: "2023-10-25",
+            status: "Pending",
+            transactionHash: "0xabc123...",
+          },
+          {
+            id: 2,
+            type: "Eye Test Upload",
+            date: "2023-10-20",
+            status: "Approved",
+            transactionHash: "0xdef456...",
+          },
+        ];
+        localStorage.setItem('renewalHistory', JSON.stringify(demoRenewalHistory));
+        setRenewalHistory(demoRenewalHistory);
+      }
+
+      const storedTransactions = localStorage.getItem('transactions');
+      if (storedTransactions) {
+        setTransactions(JSON.parse(storedTransactions));
+      } else {
+        const demoTransactions = [
+          { id: 1, type: "License Mint", date: "2021-03-15", hash: "0x123abc..." },
+          { id: 2, type: "Disc Renewal", date: "2023-01-01", hash: "0x456def..." },
+        ];
+        localStorage.setItem('transactions', JSON.stringify(demoTransactions));
+        setTransactions(demoTransactions);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-gray-800">
@@ -39,7 +105,7 @@ export default function DashboardPage() {
           </button>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-sm">0x...1234</span>
+          <span className="text-sm">{walletAddress ? `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}` : 'Connect Wallet'}</span>
           <div className="w-8 h-8 bg-gray-300 rounded-full"></div> {/* Placeholder for profile pic */}
         </div>
       </nav>
@@ -57,9 +123,13 @@ export default function DashboardPage() {
               <div className="flex items-center mb-4">
                 <Image src="/digital-license-illustration.svg" alt="Digital License" width={80} height={80} className="mr-4" />
                 <div>
-                  <p className="text-lg font-medium">John Doe</p>
-                  <p className="text-sm opacity-80">License ID: DC-SA-123456789</p>
-                  <p className="text-sm opacity-80">Valid Until: 2028-10-26</p>
+                  <p className="text-lg font-medium">{licenseData.name}</p>
+                  <p className="text-sm opacity-80">ID: {licenseData.id}</p>
+                  <p className="text-sm opacity-80">License: {licenseData.license}</p>
+                  <p className="text-sm opacity-80">Code: {licenseData.code}</p>
+                  <p className="text-sm opacity-80">Issue Date: {licenseData.issueDate}</p>
+                  <p className="text-sm opacity-80">Expiry Date: {licenseData.expiryDate}</p>
+                  <p className="text-sm opacity-80">Disc Expires: {licenseData.discExpiry}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -88,27 +158,19 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold mb-4 text-primary">Recent Activity</h2>
             <div className="bg-white rounded-xl shadow-lg p-6">
               <ul>
-                <li className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
-                  <div>
-                    <p className="font-medium">License Renewal Initiated</p>
-                    <p className="text-sm text-gray-500">2023-10-25 at 10:30 AM</p>
-                  </div>
-                  <span className="text-sm text-teal-600 font-semibold">Pending</span>
-                </li>
-                <li className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
-                  <div>
-                    <p className="font-medium">Eye Test Results Uploaded</p>
-                    <p className="text-sm text-gray-500">2023-10-20 at 02:15 PM</p>
-                  </div>
-                  <span className="text-sm text-green-600 font-semibold">Approved</span>
-                </li>
-                <li className="flex justify-between items-center py-3 last:border-b-0">
-                  <div>
-                    <p className="font-medium">Profile Information Updated</p>
-                    <p className="text-sm text-gray-500">2023-10-15 at 09:00 AM</p>
-                  </div>
-                  <span className="text-sm text-gray-600 font-semibold">Completed</span>
-                </li>
+                {renewalHistory.map((item) => (
+                  <li key={item.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
+                    <div>
+                      <p className="font-medium">{item.type}</p>
+                      <p className="text-sm text-gray-500">{item.date} - {item.transactionHash}</p>
+                    </div>
+                    <span className={`text-sm font-semibold ${
+                      item.status === 'Pending' ? 'text-teal-600' :
+                      item.status === 'Approved' ? 'text-green-600' :
+                      'text-gray-600'
+                    }`}>{item.status}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -118,6 +180,19 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold mb-6 text-primary">Renewals</h1>
             <p>Details about license renewals will go here.</p>
+            <h2 className="text-2xl font-bold mb-4 text-primary">Transaction History</h2>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <ul>
+                {transactions.map((tx) => (
+                  <li key={tx.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
+                    <div>
+                      <p className="font-medium">{tx.type}</p>
+                      <p className="text-sm text-gray-500">{tx.date} - {tx.hash}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 
